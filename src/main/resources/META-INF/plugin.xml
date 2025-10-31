@@ -1,0 +1,33 @@
+<idea-plugin>
+    <id>ru.codeplugin.methodology</id>
+    <name>CODE Methodology (Simple)</name>
+    <vendor email="you@example.com">CODE Team</vendor>
+    <version>0.1.0</version>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Группа уведомлений -->
+        <notificationGroup id="CODE" displayType="BALLOON" />
+
+        <!-- Сервис проекта + стартовая инициализация -->
+        <projectService serviceImplementation="ru.codeplugin.services.CodeConfigService"/>
+        <postStartupActivity implementation="ru.codeplugin.startup.CodeStartupActivity"/>
+
+        <!-- Tool Window -->
+        <toolWindow id="CODE" factoryClass="ru.codeplugin.ui.CodeToolWindowFactory" anchor="right"/>
+
+        <!-- Инспекция "файл не отформатирован" (язык-агностичная) -->
+        <localInspection implementationClass="ru.codeplugin.inspections.NotFormattedInspection"/>
+    </extensions>
+
+    <actions>
+        <!-- Вместо "создать ветку" — проверяем, что имя ТЕКУЩЕЙ ветки соответствует branch_format -->
+        <action id="ru.codeplugin.action.validateBranch"
+                class="ru.codeplugin.actions.ValidateBranchNameAction"
+                text="Validate CODE Branch Name"
+                description="Check current Git branch against CODE branch_format">
+            <add-to-group group-id="Vcs.Toolbar" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

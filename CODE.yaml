@@ -1,0 +1,11 @@
+version: 1
+prepare:
+  branch_format: "feature/${issue}-${slug}"
+develop:
+  comments_required_for_new_methods: true
+control:
+  coverage:
+    min_overall: 0.80
+apply:
+  pr:
+    reviewers_min: 2

@@ -5,29 +5,30 @@
     <version>0.1.0</version>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Группа уведомлений -->
-        <notificationGroup id="CODE" displayType="BALLOON" />
-
-        <!-- Сервис проекта + стартовая инициализация -->
-        <projectService serviceImplementation="ru.codeplugin.services.CodeConfigService"/>
+        <notificationGroup id="CODE" displayType="BALLOON"/>
         <postStartupActivity implementation="ru.codeplugin.startup.CodeStartupActivity"/>
-
-        <!-- Tool Window -->
         <toolWindow id="CODE" factoryClass="ru.codeplugin.ui.CodeToolWindowFactory" anchor="right"/>
 
-        <!-- Инспекция "файл не отформатирован" (язык-агностичная) -->
-        <localInspection implementationClass="ru.codeplugin.inspections.NotFormattedInspection"/>
+        <localInspection
+                implementationClass="ru.codeplugin.inspections.NotFormattedInspection"
+                shortName="CodeNotFormatted"
+                displayName="Файл не отформатирован (CODE)"
+                groupPath="CODE"
+                enabledByDefault="true" language=""/>
     </extensions>
 
     <actions>
-        <!-- Вместо "создать ветку" — проверяем, что имя ТЕКУЩЕЙ ветки соответствует branch_format -->
         <action id="ru.codeplugin.action.validateBranch"
                 class="ru.codeplugin.actions.ValidateBranchNameAction"
                 text="Validate CODE Branch Name"
-                description="Check current Git branch against CODE branch_format">
-            <add-to-group group-id="Vcs.Toolbar" anchor="last"/>
+                description="Check current Git branch against CODE branch_format"
+                icon="/icons/code.svg">
+            <add-to-group group-id="MainToolbarRight" anchor="last"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <keyboard-shortcut first-keystroke="ctrl alt B" keymap="$default"/>
         </action>
     </actions>
 </idea-plugin>

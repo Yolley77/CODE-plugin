@@ -32,6 +32,10 @@ class ValidateBranchNameAction : AnAction() {
             .notify(project)
     }
 
-    private fun currentBranch(project: Project): String? =
-        GitUtil.getRepositories(project).firstOrNull()?.currentBranchName
+    private fun currentBranch(project: Project): String? {
+        val repos = GitUtil.getRepositories(project)
+        if (repos.isEmpty()) return null
+        return repos.first().currentBranchName
+    }
+
 }

@@ -12,6 +12,7 @@ class NotFormattedInspection : LocalInspectionTool() {
 
     override fun getDisplayName(): String = "CODE: файл не отформатирован по Code Style"
     override fun getShortName(): String = "CodeNotFormatted"
+    override fun getGroupDisplayName(): String = "CODE"
     override fun isEnabledByDefault(): Boolean = true
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
@@ -46,7 +47,7 @@ class ReformatQuickFix : LocalQuickFix {
     override fun getFamilyName(): String = "Отформатировать файл (CODE)"
     override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
         val file = descriptor.psiElement.containingFile ?: return
-        WriteCommandAction.runWriteCommandAction(project, "Reformat via CODE") {
+        WriteCommandAction.runWriteCommandAction(project) {
             CodeStyleManager.getInstance(project).reformat(file)
         }
     }

@@ -6,11 +6,11 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.PsiFile
 import com.intellij.psi.codeStyle.CodeStyleManager
+import ru.codeplugin.services.CodeConfigService
 
-/** Язык-агностичная проверка: совпадает ли текущий файл с результатом форматтера. */
 class NotFormattedInspection : LocalInspectionTool() {
 
-    override fun getDisplayName(): String = "CODE: файл не отформатирован по Code Style"
+    override fun getDisplayName(): String = "Файл не отформатирован (CODE)"
     override fun getShortName(): String = "CodeNotFormatted"
     override fun getGroupDisplayName(): String = "CODE"
     override fun isEnabledByDefault(): Boolean = true
@@ -18,23 +18,24 @@ class NotFormattedInspection : LocalInspectionTool() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         object : PsiElementVisitor() {
             override fun visitFile(file: PsiFile) {
+                // ⛔ Если в CODE.yaml выключена проверка стиля – инспекция молчит
+                val cfg = file.project.getService(CodeConfigService::class.java).cfg()
+                if (!cfg.develop.require_code_style_check) return
+
                 if (file.virtualFile == null || file.textLength == 0) return
 
-                // Скопируем PSI и отформатируем его
                 val project = file.project
                 val copy = file.copy() as PsiFile
                 try {
                     CodeStyleManager.getInstance(project).reformat(copy)
                 } catch (_: Throwable) {
-                    return // если форматтер для языка не поддержан — тихо выходим
+                    return // если форматтер для языка не поддержан – тихо выходим
                 }
 
-                // Сравним тексты
-                val formatted = copy.text
-                if (formatted != file.text) {
+                if (copy.text != file.text) {
                     holder.registerProblem(
                         file,
-                        "Файл отклоняется от форматирования Code Style",
+                        "Файл отклоняется от форматирования Code Style (CODE)",
                         ProblemHighlightType.WEAK_WARNING,
                         ReformatQuickFix()
                     )

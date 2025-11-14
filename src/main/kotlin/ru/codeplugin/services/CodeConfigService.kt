@@ -57,12 +57,11 @@ class CodeConfig() {
 }
 
 class Prepare() {
-    /** Оставляем плейсхолдеры в виде литерала, чтобы не интерполировались в Kotlin-строке */
     var branch_format: String = "feature/\${issue}-\${slug}"
 }
 
 class Develop() {
-    var comments_required_for_new_methods: Boolean = true
+    var require_code_style_check: Boolean = true
 }
 
 class Control() {
@@ -74,9 +73,5 @@ class Coverage() {
 }
 
 class Apply() {
-    var pr: Pr = Pr()
-}
-
-class Pr() {
-    var reviewers_min: Int = 2
+    var max_files_changed: Int = 30
 }

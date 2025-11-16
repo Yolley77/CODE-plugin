@@ -10,7 +10,11 @@
     <extensions defaultExtensionNs="com.intellij">
         <notificationGroup id="CODE" displayType="BALLOON"/>
         <postStartupActivity implementation="ru.codeplugin.startup.CodeStartupActivity"/>
-        <toolWindow id="CODE" factoryClass="ru.codeplugin.ui.CodeToolWindowFactory" anchor="right"/>
+        <toolWindow
+                id="CODE"
+                factoryClass="ru.codeplugin.ui.CodeToolWindowFactory"
+                anchor="right"
+                icon="/icons/code.svg"/>
 
         <localInspection
                 implementationClass="ru.codeplugin.inspections.NotFormattedInspection"
@@ -27,36 +31,42 @@
                icon="/icons/code.svg">
             <add-to-group group-id="MainToolbarRight" anchor="last"/>
 
-            <!-- PREPARE -->
             <action id="ru.codeplugin.action.prepare"
                     class="ru.codeplugin.actions.ValidateBranchNameAction"
                     text="Prepare: Validate Branch Name"
                     description="Проверить, что текущая ветка соответствует CODE branch_format"/>
 
-            <!-- DEVELOP -->
             <action id="ru.codeplugin.action.develop"
                     class="ru.codeplugin.actions.RunDevelopChecksAction"
-                    text="Develop: Check and Format Current File"
-                    description="Запустить проверку/форматирование текущего файла по Code Style"/>
+                    text="Develop: Check &amp; Format Current File"
+                    description="Форматировать текущий файл по Code Style (CODE)"/>
 
-            <!-- CONTROL -->
             <action id="ru.codeplugin.action.control"
-                    class="ru.codeplugin.actions.ControlChecklistAction"
-                    text="Control: Coverage Checklist"
-                    description="Показать чек-лист проверки покрытия тестов через Run with Coverage"/>
+                    class="ru.codeplugin.actions.ControlCheckCoverageAction"
+                    text="Control: Check Coverage"
+                    description="Проверить покрытие тестами по Jacoco-отчёту"/>
 
-            <!-- APPLY: теперь реальная проверка числа изменённых файлов -->
+            <action id="ru.codeplugin.action.control.aiTests"
+                    class="ru.codeplugin.actions.ControlAiSuggestTestsAction"
+                    text="Control: AI Suggest Tests"
+                    description="Получить от AI сценарии и примеры реализации тестов"/>
+
             <action id="ru.codeplugin.action.apply"
                     class="ru.codeplugin.actions.ApplyValidateChangesAction"
-                    text="Apply: Validate Changed Files Count"
-                    description="Проверить, что количество изменённых файлов не превышает лимит из CODE.yaml"/>
+                    text="Apply: Validate Changed Files &amp; Branch Age"
+                    description="Проверить размер изменений и возраст ветки"/>
 
-            <!-- Перечитать конфиг -->
+            <action id="ru.codeplugin.action.apply.aiPrDescription"
+                    class="ru.codeplugin.actions.ApplyAiSuggestPrDescriptionAction"
+                    text="Apply: AI Suggest PR Description"
+                    description="Сгенерировать с помощью AI описание PR и название коммита"/>
+
             <action id="ru.codeplugin.action.reloadConfig"
                     class="ru.codeplugin.actions.ReloadCodeConfigAction"
                     text="Reload CODE.yaml"
                     description="Перечитать конфигурацию CODE из CODE.yaml"/>
         </group>
+
     </actions>
 
 </idea-plugin>

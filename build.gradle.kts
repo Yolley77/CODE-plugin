@@ -14,6 +14,7 @@ repositories {
 
 dependencies {
     implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.json:json:20250517")
 
     intellijPlatform {
         create("IC", "2025.1.4.1")                    // Платформа

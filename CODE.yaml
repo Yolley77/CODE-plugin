@@ -2,6 +2,7 @@ version: 1
 
 prepare:
   branch_format: "feature/${issue}-${slug}"
+  max_branch_age_hours: 24   # допустимый возраст ветки до первого мерджа/ревью
 
 develop:
   require_code_style_check: true
@@ -9,6 +10,13 @@ develop:
 control:
   coverage:
     min_overall: 0.80
+    report_path: "build/reports/jacoco/test/jacocoTestReport.xml"
 
 apply:
   max_files_changed: 30
+
+ai:
+  enabled: false
+  endpoint: "https://your-llm-endpoint.example.com/v1/chat"  # пример
+  model: "gpt-4.1-mini"
+  api_key_env: "CODE_AI_KEY"

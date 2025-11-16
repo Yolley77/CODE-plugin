@@ -54,10 +54,19 @@ class CodeConfig() {
     var develop: Develop = Develop()
     var control: Control = Control()
     var apply: Apply = Apply()
+    var ai: Ai = Ai()
+}
+
+class Ai() {
+    var enabled: Boolean = false
+    var endpoint: String = ""
+    var model: String = ""
+    var api_key_env: String = ""
 }
 
 class Prepare() {
     var branch_format: String = "feature/\${issue}-\${slug}"
+    var max_branch_age_hours: Int = 24
 }
 
 class Develop() {
@@ -70,6 +79,7 @@ class Control() {
 
 class Coverage() {
     var min_overall: Double = 0.8
+    var report_path: String = "build/reports/jacoco/test/jacocoTestReport.xml"
 }
 
 class Apply() {

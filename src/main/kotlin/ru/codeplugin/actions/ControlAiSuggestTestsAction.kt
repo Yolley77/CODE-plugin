@@ -10,6 +10,8 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.vcs.changes.ChangeListManager
 import ru.codeplugin.services.AiAssistantService
+import com.intellij.openapi.application.ApplicationManager
+import ru.codeplugin.ui.getInstance
 
 class ControlAiSuggestTestsAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -40,7 +42,7 @@ class ControlAiSuggestTestsAction : AnAction() {
                 }
 
                 // пока используем список файлов как proxy «областей без покрытия»
-                val uncoveredAreas = if (files.isEmpty()) emptyList() else files
+                val uncoveredAreas = files.ifEmpty { emptyList() }
 
                 indicator.text = "Отправляем запрос к AI..."
 
@@ -54,6 +56,10 @@ class ControlAiSuggestTestsAction : AnAction() {
                             "Откройте ToolWindow CODE, чтобы скопировать сценарии и примеры тестов.",
                     NotificationType.INFORMATION
                 ).notify(project)
+
+                ApplicationManager.getApplication().invokeLater {
+                    getInstance(project)?.refresh()
+                }
             }
         })
     }

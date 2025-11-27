@@ -4,6 +4,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
+import com.intellij.ui.components.JBScrollPane
 import ru.codeplugin.services.AiAssistantService
 import ru.codeplugin.services.CodeConfigService
 import java.awt.BorderLayout
@@ -59,8 +60,8 @@ class CodeToolWindow(private val project: Project) {
         testsText.lineWrap = true
         testsText.wrapStyleWord = true
 
-        val prScroll = JScrollPane(prText)
-        val testsScroll = JScrollPane(testsText)
+        val prScroll = JBScrollPane(prText)
+        val testsScroll = JBScrollPane(testsText)
         prScroll.verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
         testsScroll.verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
 
@@ -78,19 +79,14 @@ class CodeToolWindow(private val project: Project) {
 
         mainPanel.add(aiPanel, BorderLayout.CENTER)
 
-        // --- низ: кнопка обновления ---
-        val refreshButton = JButton("Обновить AI-ответы")
-        refreshButton.addActionListener { updateAiTexts() }
-
-        val bottomPanel = JBPanel<JBPanel<*>>(BorderLayout())
-        bottomPanel.add(refreshButton, BorderLayout.EAST)
-
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH)
-
         // первичная инициализация
         updateAiTexts()
 
         return mainPanel
+    }
+
+    fun refresh() {
+        updateAiTexts()
     }
 
     private fun updateAiTexts() {

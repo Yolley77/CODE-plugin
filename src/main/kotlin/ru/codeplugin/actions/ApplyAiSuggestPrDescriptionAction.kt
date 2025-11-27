@@ -13,6 +13,8 @@ import ru.codeplugin.services.AiAssistantService
 import ru.codeplugin.services.CodeConfigService
 import ru.codeplugin.services.JacocoCoverageReader
 import java.nio.file.Paths
+import com.intellij.openapi.application.ApplicationManager
+import ru.codeplugin.ui.getInstance
 
 class ApplyAiSuggestPrDescriptionAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -64,6 +66,10 @@ class ApplyAiSuggestPrDescriptionAction : AnAction() {
                 ai.suggestPrDescription(diffSummary, coverageInfo)
 
                 ai.isPrLoading = false
+
+                ApplicationManager.getApplication().invokeLater {
+                    getInstance(project)?.refresh()
+                }
 
                 group.createNotification(
                     "CODE / APPLY / AI",

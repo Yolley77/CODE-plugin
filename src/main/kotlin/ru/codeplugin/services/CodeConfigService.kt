@@ -57,13 +57,6 @@ class CodeConfig() {
     var ai: Ai = Ai()
 }
 
-class Ai() {
-    var enabled: Boolean = false
-    var endpoint: String = ""
-    var model: String = ""
-    var api_key_env: String = ""
-}
-
 class Prepare() {
     var branch_format: String = "feature/\${issue}-\${slug}"
     var max_branch_age_hours: Int = 24
@@ -84,4 +77,26 @@ class Coverage() {
 
 class Apply() {
     var max_files_changed: Int = 30
+}
+
+class Ai() {
+    var enabled: Boolean = false
+
+    /** Строка из личного кабинета (обычно уже base64) */
+    var authKeyBase64: String = ""
+
+    /** https://ngw.devices.sberbank.ru:9443 */
+    var authUrl: String = ""
+
+    /** https://gigachat.devices.sberbank.ru */
+    var apiUrl: String = ""
+
+    /** Например: GigaChat-2 или GigaChat:latest */
+    var model: String = "GigaChat-2"
+
+    /** Версия API: GIGACHAT_API_PERS / GIGACHAT_API_B2B / GIGACHAT_API_CORP */
+    var scope: String = "GIGACHAT_API_PERS"
+
+    /** Basic или Bearer — пример curl в личном кабинете */
+    var authScheme: String = "Basic"
 }

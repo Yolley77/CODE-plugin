@@ -2,7 +2,7 @@ version: 1
 
 prepare:
   branch_format: "feature/${issue}-${slug}"
-  max_branch_age_hours: 24   # допустимый возраст ветки до первого мерджа/ревью
+  max_branch_age_hours: 24
 
 develop:
   require_code_style_check: true
@@ -16,7 +16,10 @@ apply:
   max_files_changed: 30
 
 ai:
-  enabled: false
-  endpoint: "https://your-llm-endpoint.example.com/v1/chat"  # пример
-  model: "gpt-4.1-mini"
-  api_key_env: "CODE_AI_KEY"
+  enabled: true
+  authKeyBase64: "base64 client_id:client_secret"
+  authUrl: "https://ngw.devices.sberbank.ru:9443"
+  apiUrl: "https://gigachat.devices.sberbank.ru"
+  model: "GigaChat-2"
+  scope: "GIGACHAT_API_PERS"
+  authScheme: "Basic"    # если в примере из ЛК у тебя Authorization: Bearer ..., поставь "Bearer"

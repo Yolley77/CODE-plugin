@@ -4,11 +4,16 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Instant
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 @Service(Service.Level.PROJECT)
 class AiAssistantService(private val project: Project) {
@@ -16,87 +21,176 @@ class AiAssistantService(private val project: Project) {
     private val log = Logger.getInstance(AiAssistantService::class.java)
     private val httpClient: HttpClient = HttpClient.newBuilder().build()
 
+    @Volatile private var accessToken: String? = null
+    @Volatile private var tokenExpiresAt: Instant? = null
+
     @Volatile var isPrLoading: Boolean = false
     @Volatile var isTestsLoading: Boolean = false
 
-    private var lastPrDescription: String? = null
-    private var lastTestsSuggestion: String? = null
+    @Volatile private var lastPrDescription: String? = null
+    @Volatile private var lastTestsSuggestion: String? = null
 
     fun getLastPrDescription(): String? = lastPrDescription
     fun getLastTestsSuggestion(): String? = lastTestsSuggestion
     fun setLastPrDescription(text: String?) { lastPrDescription = text }
     fun setLastTestsSuggestion(text: String?) { lastTestsSuggestion = text }
 
-    private fun cfg() = project.service<CodeConfigService>().cfg().ai
+    private fun cfgAi() = project.service<CodeConfigService>().cfg().ai
 
     private fun isEnabled(): Boolean {
-        val cfg = cfg()
-        return cfg.enabled && cfg.endpoint.isNotBlank() && cfg.api_key_env.isNotBlank()
+        val cfg = cfgAi()
+        return cfg.enabled && cfg.authKeyBase64.isNotBlank() &&
+                cfg.authUrl.isNotBlank() && cfg.apiUrl.isNotBlank()
     }
 
-    private fun apiKey(): String? {
-        val envName = cfg().api_key_env
-        return System.getenv(envName)
+        /** Обновляем токен GigaChat при необходимости */
+        private fun ensureToken(): Boolean {
+            val ai = cfgAi()
+            val now = Instant.now()
+
+            if (accessToken != null && tokenExpiresAt != null && now.isBefore(tokenExpiresAt!!.minusSeconds(60))) {
+                return true
+            }
+
+            return try {
+                val uri = URI.create(ai.authUrl.trimEnd('/') + "/api/v2/oauth")
+                val scopeValue = ai.scope.ifBlank { "GIGACHAT_API_PERS" }
+                val body = "scope=" + URLEncoder.encode(scopeValue, StandardCharsets.UTF_8)
+
+                val authHeader = ai.authScheme.trim() + " " + ai.authKeyBase64.trim()
+
+                val request = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .header("Authorization", authHeader)
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header("Accept", "application/json")
+                    .header("RqUID", UUID.randomUUID().toString())
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build()
+
+                val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+
+                // Чтобы видеть, что именно не нравится GigaChat
+                log.warn("GigaChat OAuth response: ${response.statusCode()} ${response.body()}")
+
+                if (response.statusCode() !in 200..299) {
+                    false
+                } else {
+                    val obj = JSONObject(response.body())
+                    val token = obj.getString("access_token")
+                    val exp = obj.optLong("expires_at", 0L)
+                    accessToken = token
+                    tokenExpiresAt = if (exp > 0) {
+                        Instant.ofEpochSecond(exp)
+                    } else {
+                        now.plusSeconds(30 * 60)
+                    }
+                    true
+                }
+            } catch (e: Exception) {
+                log.warn("GigaChat OAuth exception", e)
+                false
+            }
+        }
+
+    /** Низкоуровневый вызов GigaChat chat/completions */
+    private fun callGigaChat(prompt: String): String {
+        if (!ensureToken()) {
+            throw IllegalStateException("GigaChat: не удалось получить access token")
+        }
+
+        val ai = cfgAi()
+        val token = accessToken ?: throw IllegalStateException("GigaChat: token == null")
+
+        val messages = JSONArray()
+            .put(
+                JSONObject()
+                    .put("role", "user")
+                    .put("content", prompt)
+            )
+
+        val body = JSONObject()
+            .put("model", ai.model.ifBlank { "GigaChat-2" })
+            .put("messages", messages)
+
+        val uri = URI.create(ai.apiUrl.trimEnd('/') + "/api/v1/chat/completions")
+
+        val request = HttpRequest.newBuilder()
+            .uri(uri)
+            .header("Authorization", "Bearer $token")
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+            .build()
+
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+        if (response.statusCode() !in 200..299) {
+            throw IllegalStateException("GigaChat API error ${response.statusCode()}: ${response.body()}")
+        }
+
+        val obj = JSONObject(response.body())
+        val choices = obj.optJSONArray("choices")
+            ?: throw IllegalStateException("GigaChat: поле choices отсутствует")
+
+        if (choices.length() == 0) {
+            throw IllegalStateException("GigaChat: пустой массив choices")
+        }
+
+        val message = choices.getJSONObject(0).getJSONObject("message")
+        return message.getString("content")
     }
 
-    /**
-     * Сгенерировать описание PR на основе краткого описания diff’а и информации о покрытии.
-     * В реальной жизни сюда можно передавать больше контекста.
-     */
+    /** PR: описание + commit title + рекомендация */
     fun suggestPrDescription(diffSummary: String, coverageInfo: String): String {
-        val disabledMsg = "AI-помощник отключён или не сконфигурирован. " +
-                "Проверьте секцию ai в CODE.yaml и переменную окружения с API-ключом."
+        val disabledMsg = "AI-ассистент (GigaChat) отключён или не настроен. " +
+                "Проверьте секцию ai в CODE.yaml."
         if (!isEnabled()) {
             lastPrDescription = disabledMsg
             return disabledMsg
         }
 
-        val key = apiKey() ?: run {
-            val msg = "$disabledMsg (API ключ не найден в окружении)"
-            lastPrDescription = msg
-            return msg
-        }
-
+        isPrLoading = true
         return try {
             val prompt = buildPrPrompt(diffSummary, coverageInfo)
-            val result = callAiApi(prompt, key)
+            val result = callGigaChat(prompt)
             lastPrDescription = result
             result
         } catch (e: Exception) {
-            log.warn("AI PR description request failed", e)
-            val msg = "Не удалось получить ответ от AI-помощника: ${e.message}"
+            log.warn("GigaChat PR description failed", e)
+            val msg = "Не удалось получить ответ от GigaChat: ${e.message}"
             lastPrDescription = msg
             msg
+        } finally {
+            isPrLoading = false
         }
     }
 
+    /** Тесты: сценарии + примеры реализации тестов */
     fun suggestTests(changesSummary: String, uncoveredAreas: List<String>): String {
-        val disabledMsg = "AI-помощник отключён или не сконфигурирован."
+        val disabledMsg = "AI-ассистент (GigaChat) отключён или не настроен."
         if (!isEnabled()) {
             lastTestsSuggestion = disabledMsg
             return disabledMsg
         }
 
-        val key = apiKey() ?: run {
-            val msg = "$disabledMsg (API ключ не найден в окружении)"
-            lastTestsSuggestion = msg
-            return msg
-        }
-
+        isTestsLoading = true
         return try {
             val prompt = buildTestsPrompt(changesSummary, uncoveredAreas)
-            val result = callAiApi(prompt, key)
+            val result = callGigaChat(prompt)
             lastTestsSuggestion = result
             result
         } catch (e: Exception) {
-            log.warn("AI tests suggestion request failed", e)
-            val msg = "Не удалось получить ответ от AI-помощника: ${e.message}"
+            log.warn("GigaChat tests suggestion failed", e)
+            val msg = "Не удалось получить ответ от GigaChat: ${e.message}"
             lastTestsSuggestion = msg
             msg
+        } finally {
+            isTestsLoading = false
         }
     }
 
-    /** Простейший формат промпта — одна строка текста, дальше модель сама */
+    // ----- промпты (как мы уже согласовали) -----
+
     private fun buildPrPrompt(diffSummary: String, coverageInfo: String): String =
         """
         Ты — помощник ревьюера кода.
@@ -137,7 +231,6 @@ class AiAssistantService(private val project: Project) {
         - Короткая рекомендация по PR (например, "готов к ревью", "нужно разбить на несколько PR", "следует добавить тесты на ...").
         """.trimIndent()
 
-    // --- промпт для тестов: сценарий + реализация ---
     private fun buildTestsPrompt(changesSummary: String, uncoveredAreas: List<String>): String =
         """
         Ты — помощник по тестированию в проекте на Kotlin (JUnit5).
@@ -172,58 +265,4 @@ class AiAssistantService(private val project: Project) {
            ...
            ```
         """.trimIndent()
-
-    /**
-     * Универсальный метод вызова LLM API.
-     * Здесь используется обобщённый JSON-формат (упрощённо).
-     * Ты можешь адаптировать под конкретный провайдер (OpenAI, внутренний сервис и т.п.).
-     */
-    private fun callAiApi(prompt: String, apiKey: String): String {
-        val cfg = cfg()
-        val endpoint = cfg.endpoint
-        val model = cfg.model.ifBlank { "default-model" }
-
-        // Пример простого JSON-запроса в стиле chat/completions
-        val payload = JSONObject()
-            .put("model", model)
-            .put("messages", listOf(
-                JSONObject().put("role", "system").put("content", "Ты помогаешь разработчикам улучшать качество кода."),
-                JSONObject().put("role", "user").put("content", prompt)
-            ))
-
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer $apiKey")
-            .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
-            .build()
-
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() !in 200..299) {
-            throw IllegalStateException("AI API returned status ${response.statusCode()}: ${response.body()}")
-        }
-
-        val body = response.body()
-
-        // Сюда можно поставить реальный парсинг по схеме конкретного API.
-        // Пока предполагаем, что body уже содержит текст ответа или поле "content".
-        return try {
-            val json = JSONObject(body)
-            // Примерно в стиле OpenAI: choices[0].message.content
-            val choices = json.optJSONArray("choices")
-            if (choices != null && choices.length() > 0) {
-                val first = choices.getJSONObject(0)
-                val msg = first.optJSONObject("message")
-                msg?.optString("content") ?: body
-            } else {
-                body
-            }
-        } catch (_: Exception) {
-            body
-        }
-    }
-
-    companion object {
-        fun getInstance(project: Project): AiAssistantService = project.service()
-    }
 }

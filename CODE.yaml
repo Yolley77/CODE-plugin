@@ -22,4 +22,4 @@ ai:
   apiUrl: "https://gigachat.devices.sberbank.ru"
   model: "GigaChat-2"
   scope: "GIGACHAT_API_PERS"
-  authScheme: "Basic"    # если в примере из ЛК у тебя Authorization: Bearer ..., поставь "Bearer"
+  authScheme: "Basic"

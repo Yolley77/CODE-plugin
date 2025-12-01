@@ -1,8 +1,32 @@
 <idea-plugin>
     <id>ru.codeplugin.methodology</id>
-    <name>CODE Methodology (Simple)</name>
-    <vendor email="you@example.com">CODE Team</vendor>
+    <name>CODE Methodology</name>
+    <vendor email="auriax@ya.ru">CODE Team</vendor>
     <version>0.1.0</version>
+    <description><![CDATA[
+<p><b>CODE – a code base management methodology</b> based on adapting the PDCA cycle to industrial software development processes.
+The plugin integrates the four stages of the methodology directly into the IntelliJ IDEA / Android Studio workflow:
+the <b>Prepare</b> stage checks the correctness of the branch and the start of development;
+the <b>Develop</b> stage ensures compliance with code style rules;
+the <b>Control</b> stage analyzes test coverage and generates recommendations;
+the <b>Apply</b> stage evaluates the integration readiness of changes and helps generate Pull Requests.
+
+<p>The methodology forms a manageable quality control cycle, combining formal metrics,
+requirements for change structure, and intelligent recommendations based on a generative language model.</p>
+
+<p><b>CODE method diagram:</b></p>
+<pre>
+   ┌────────────┐      ┌─────────────┐      ┌─────────────┐      ┌────────────┐
+   │  PREPARE   │──→───│   DEVELOP   │──→───│   CONTROL   │──→───│   APPLY    │
+   └─────┬──────┘      └──────┬──────┘      └──────┬──────┘      └─────┬──────┘
+         └──────────────←─────┴──────────────←─────┴──────────────←────┘
+</pre>
+
+<p>A detailed description of the methodology is available in the article:<br>
+<a href="https://github.com/Yolley77/CODE-plugin">
+METHODOLOGY FOR MANAGING THE CODE BASE OF SOFTWARE SYSTEMS IN THE DIGITAL ECONOMY
+</a></p>
+]]></description>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>Git4Idea</depends>

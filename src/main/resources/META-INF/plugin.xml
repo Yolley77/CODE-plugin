@@ -2,7 +2,7 @@
     <id>ru.codeplugin.methodology</id>
     <name>CODE Methodology</name>
     <vendor email="auriax@ya.ru">CODE Team</vendor>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <description><![CDATA[
 <p><b>CODE – a code base management methodology</b> based on adapting the PDCA cycle to industrial software development processes.
 The plugin integrates the four stages of the methodology directly into the IntelliJ IDEA / Android Studio workflow:

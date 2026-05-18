@@ -60,6 +60,11 @@ METHODOLOGY FOR MANAGING THE CODE BASE OF SOFTWARE SYSTEMS IN THE DIGITAL ECONOM
                     text="Prepare: Validate Branch Name"
                     description="Проверить, что текущая ветка соответствует CODE branch_format"/>
 
+            <action id="ru.codeplugin.action.codeMd"
+                    class="ru.codeplugin.actions.ManageCodeMdAction"
+                    text="Prepare: Generate or Validate CODE.md"
+                    description="Create a starter CODE.md or validate the existing PDCA workflow agreement"/>
+
             <action id="ru.codeplugin.action.develop"
                     class="ru.codeplugin.actions.RunDevelopChecksAction"
                     text="Develop: Check &amp; Format Current File"

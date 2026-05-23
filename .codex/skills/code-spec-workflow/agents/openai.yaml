@@ -1,0 +1,4 @@
+interface:
+  display_name: "CODE/SPEC Workflow"
+  short_description: "Generate or validate CODE.md and SPEC.md"
+  default_prompt: "Use $code-spec-workflow to generate or validate CODE.md and SPEC.md for this project."

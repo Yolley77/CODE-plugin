@@ -11,6 +11,16 @@ control:
   coverage:
     min_overall: 0.80
     report_path: "build/reports/jacoco/test/jacocoTestReport.xml"
+  required_checks:
+    - id: "build"
+      command: ".\\gradlew.bat build"
+      report_path: "build/libs"
+    - id: "test"
+      command: ".\\gradlew.bat test"
+      report_path: "build/test-results/test"
+    - id: "verifyPlugin"
+      command: ".\\gradlew.bat verifyPlugin"
+      report_path: "build/reports/pluginVerifier"
 
 apply:
   max_files_changed: 30

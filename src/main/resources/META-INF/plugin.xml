@@ -90,6 +90,11 @@ METHODOLOGY FOR MANAGING THE CODE BASE OF SOFTWARE SYSTEMS IN THE DIGITAL ECONOM
                     text="Apply: AI Suggest PR Description"
                     description="Сгенерировать с помощью AI описание PR и название коммита"/>
 
+            <action id="ru.codeplugin.action.deviationReport"
+                    class="ru.codeplugin.actions.ControlGenerateDeviationReportAction"
+                    text="Generate Deviation Report"
+                    description="Сформировать Markdown-отчёт количественной оценки отклонений CODE"/>
+
             <action id="ru.codeplugin.action.reloadConfig"
                     class="ru.codeplugin.actions.ReloadCodeConfigAction"
                     text="Reload CODE.yaml"

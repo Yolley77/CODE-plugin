@@ -92,6 +92,11 @@ VCS, PSI, UI, coverage или AI.
 - Форматирование и локальная разработка: `RunDevelopChecksAction.kt`, `NotFormattedInspection.kt`, inspection
   descriptions.
 - Coverage и качество: `ControlCheckCoverageAction.kt`, `JacocoCoverageReader.kt`, `CODE.yaml`.
+- Количественная оценка отклонений CODE: `ControlGenerateDeviationReportAction.kt`,
+  `DeviationAssessmentService.kt`, `docs/deviation-assessment-user-scenario.md`.
+  В отчете stage-vector обозначается stage-specific: `xP/dP`, `xD/dD`, `xC/dC`, `xA/dA`.
+  Control evidence берется из `control.coverage.report_path`; `required_checks_configured` проверяет, что
+  `control.required_checks` не пустой.
 - AI-подсказки: конкретный AI action и `AiAssistantService.kt`.
 - PR/review/apply: `ApplyValidateChangesAction.kt`, `ApplyAiSuggestPrDescriptionAction.kt`, VCS-related services.
 - Tool Window: `CodeToolWindow.kt` и service, откуда берется отображаемое состояние.
@@ -268,6 +273,8 @@ IDE-эргономику, не ухудшает безопасность и де
 
 - `ControlCheckCoverageAction.kt`
 - `ControlAiSuggestTestsAction.kt`
+- `ControlGenerateDeviationReportAction.kt`
+- `DeviationAssessmentService.kt`
 - `JacocoCoverageReader.kt`
 - `AiAssistantService.kt`
 - `CodeConfigService.kt`
@@ -277,7 +284,10 @@ IDE-эргономику, не ухудшает безопасность и де
 
 - JaCoCo XML parser защищен от XXE?
 - Coverage threshold валиден и находится в ожидаемом диапазоне?
+- `coverage_report_exists` отличает отсутствие report artifact от низкого coverage?
+- `control.required_checks` не пустой и содержит понятные обязательные проверки?
 - AI-запросы имеют timeout и понятные ошибки?
+- Missing metrics в оценке отклонений исключаются из расчета, а не считаются успешными?
 - В логах нет токенов, секретов и полных OAuth/API response body?
 - Проверена ли кодировка пользовательских сообщений?
 - Доказано ли, что изменение поддерживает нужный этап PDCA?

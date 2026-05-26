@@ -68,11 +68,18 @@ class Develop() {
 
 class Control() {
     var coverage: Coverage = Coverage()
+    var required_checks: MutableList<RequiredCheck> = mutableListOf()
 }
 
 class Coverage() {
     var min_overall: Double = 0.8
     var report_path: String = "build/reports/jacoco/test/jacocoTestReport.xml"
+}
+
+class RequiredCheck() {
+    var id: String = ""
+    var command: String = ""
+    var report_path: String = ""
 }
 
 class Apply() {

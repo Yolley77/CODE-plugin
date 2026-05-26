@@ -34,6 +34,7 @@
 | IDE user | Форматирует текущий файл | Develop code style action | implemented | При `develop.require_code_style_check=true` action форматирует текущий PSI file через `CodeStyleManager`; без файла показывает warning dialog | `RunDevelopChecksAction.kt`, `CODE.yaml` |
 | IDE user | Видит inspection для неформатированного файла | Local inspection for CODE formatting | partial | Inspection зарегистрирована; description сейчас требует проектной проверки на специфичность текста | `plugin.xml`, `NotFormattedInspection.kt`, `inspectionDescriptions/CodeNotFormatted.html` |
 | IDE user | Проверяет coverage | Control JaCoCo coverage check | implemented | Action читает XML report path из `CODE.yaml`, парсит INSTRUCTION/LINE counters, сравнивает с threshold, показывает notification | `ControlCheckCoverageAction.kt`, `JacocoCoverageReader.kt`, `CODE.yaml` |
+| IDE user | Оценивает отклонения CODE количественно | Deviation assessment report | implemented | Action считает нормализованные метрики по Prepare/Develop/Control/Apply, исключает missing metrics, генерирует Markdown report в `build/reports/code/` | `ControlGenerateDeviationReportAction.kt`, `DeviationAssessmentService.kt` |
 | IDE user | Просит AI предложить тесты | Control AI test suggestions | implemented | Background task собирает changed files, вызывает AI, обновляет Tool Window и notification | `ControlAiSuggestTestsAction.kt`, `AiAssistantService.kt`, `CodeToolWindow.kt` |
 | IDE user | Проверяет готовность изменений | Apply changed files and branch age validation | implemented | Action считает файлы в default changelist, проверяет branch age по lifecycle service, сравнивает с `CODE.yaml`, показывает notification | `ApplyValidateChangesAction.kt`, `CodeBranchLifecycleService.kt` |
 | IDE user | Просит AI описание PR | Apply AI PR description | implemented | Background task собирает changed files и coverage info, вызывает AI, обновляет Tool Window | `ApplyAiSuggestPrDescriptionAction.kt`, `AiAssistantService.kt`, `CodeToolWindow.kt` |
@@ -79,6 +80,7 @@
 | Plugin descriptor | `src/main/resources/META-INF/plugin.xml` | Registration of actions, services, inspection, Tool Window, plugin metadata | Изменение UX, action ids, plugin capabilities | `plugin.xml` |
 | Actions | `src/main/kotlin/ru/codeplugin/actions/*.kt` | User-triggered Prepare/Develop/Control/Apply behavior | Любое изменение IDE action workflow | `rg --files` |
 | Services | `src/main/kotlin/ru/codeplugin/services/*.kt` | Config, AI, CODE.md context, branch lifecycle, coverage parsing | Изменение core behavior или shared logic | `rg --files` |
+| Generated reports | `build/reports/code/deviation-assessment-*.md` | Markdown reports for CODE quantitative deviation assessment | Проверка результата `Generate Deviation Report` | `DeviationAssessmentService.kt` |
 | Startup | `src/main/kotlin/ru/codeplugin/startup/CodeStartupActivity.kt` | Initial config detection/reload notification | Изменение поведения при открытии проекта | `CodeStartupActivity.kt` |
 | UI | `src/main/kotlin/ru/codeplugin/ui/*.kt` | Tool Window display and refresh | Изменение отображения config/AI responses | `CodeToolWindow.kt` |
 | Inspection | `src/main/kotlin/ru/codeplugin/inspections/NotFormattedInspection.kt`, `src/main/resources/inspectionDescriptions/CodeNotFormatted.html` | Local inspection for CODE formatting | Изменение inspections/PSI behavior | `plugin.xml` |
@@ -126,6 +128,16 @@
 5. Failure modes: no base path, missing/malformed XML, missing counters, invalid threshold.
 6. Acceptance criteria / verification evidence: valid JaCoCo XML above/below threshold produces INFORMATION/WARNING; missing report produces warning.
 7. Source files: `ControlCheckCoverageAction.kt`, `JacocoCoverageReader.kt`, `CODE.yaml`.
+
+### Flow: Control Quantitative Deviation Assessment
+
+1. Trigger / entrypoint: action `ru.codeplugin.action.deviationReport`.
+2. Main classes / services: `ControlGenerateDeviationReportAction`, `DeviationAssessmentService`, `CodeConfigService`, `CodeBranchLifecycleService`, `JacocoCoverageReader`.
+3. Data/config used: `prepare.branch_format`, `prepare.max_branch_age_hours`, `develop.require_code_style_check`, `control.coverage.min_overall`, `control.coverage.report_path`, `control.required_checks`, `apply.max_files_changed`, current Git branch, default changelist.
+4. User-visible result: notification with integral deviation `F`, worst CODE stage, and generated Markdown report path.
+5. Failure modes: no project base path, no Git branch, unknown branch age, missing coverage XML, missing coverage artifact, unreadable report path, empty `control.required_checks`.
+6. Acceptance criteria / verification evidence: `coverage_report_exists` is counted as a binary Control metric, `required_checks_configured` is counted as a binary Control metric based on non-empty `control.required_checks`, missing metrics are excluded from calculation, stage weights are renormalized over available metrics, report is written under `build/reports/code/`, and stage vector labels use `xP/dP`, `xD/dD`, `xC/dC`, `xA/dA`.
+7. Source files: `ControlGenerateDeviationReportAction.kt`, `DeviationAssessmentService.kt`, `docs/deviation-assessment-user-scenario.md`.
 
 ### Flow: Control AI Test Suggestions
 
@@ -184,6 +196,7 @@
 | Harden AI behavior | `AiAssistantService.kt`, AI actions, `CodeToolWindow.kt` | `AiAssistantService.kt`, `ControlAiSuggestTestsAction.kt`, `ApplyAiSuggestPrDescriptionAction.kt` | Manual disabled/auth failure/API failure checks | Secret leakage, logging tokens, blocking/cancellation gaps |
 | Add SPEC generation to plugin | `ManageCodeMdAction.kt`, `CodeMdService.kt`, `AiAssistantService.kt`, this spec | New or existing Prepare action/service files | `.\gradlew.bat build`, manual runIde diff/preview | Overwriting docs, too much context, no preview |
 | Improve coverage parsing | `JacocoCoverageReader.kt`, `ControlCheckCoverageAction.kt` | `JacocoCoverageReader.kt`, tests if added | Unit tests with valid/malformed XML | XML parser security, missing counters, threshold validation |
+| Improve deviation assessment | `DeviationAssessmentService.kt`, `ControlGenerateDeviationReportAction.kt`, `docs/deviation-assessment-user-scenario.md` | `DeviationAssessmentService.kt`, action/report docs, `CODE.yaml` if targets change | `.\gradlew.bat build`, manual action run in IDE | Incorrect normalization, missing metrics treated as pass, report leaking secrets |
 | Improve Tool Window UX | `CodeToolWindow.kt`, `CodeToolWindowFactory.kt`, AI actions | `ui/*.kt`, action refresh calls | `.\gradlew.bat runIde` | Stale UI state, unreadable long AI text, mojibake |
 | Add tests | Build config, target service/action, IntelliJ test framework docs | `src/test/**`, target files if refactoring for testability | `.\gradlew.bat test` | No current test roots, platform test setup complexity |
 | Release/plugin metadata | `plugin.xml`, `build.gradle.kts`, `gradle.properties` | Metadata/build files | `.\gradlew.bat verifyPlugin`, `.\gradlew.bat buildPlugin` | Incorrect sinceBuild, missing descriptions/icons |
@@ -232,6 +245,7 @@ LLM-readiness:
 - Key claims include source paths.
 - Future agents can choose read-first files by task type.
 - Risks and unverified assumptions are explicit.
+- Quantitative deviation reports separate measured deviations from missing data.
 
 Security/privacy:
 
@@ -247,6 +261,7 @@ Security/privacy:
 - `JacocoCoverageReader` uses default `DocumentBuilderFactory` without explicit XXE hardening flags. Source: `JacocoCoverageReader.kt`.
 - Apply validation currently uses default changelist and first Git repository; multi-root/changelist behavior should be clarified. Source: `ApplyValidateChangesAction.kt`, `ValidateBranchNameAction.kt`.
 - `ManageCodeMdAction` supports `CODE.md` generation/validation only; SPEC generation/validation is not yet integrated into plugin runtime. Source: `ManageCodeMdAction.kt`.
+- Deviation assessment currently uses MVP equal weights and local IDE/Git/report data only; retrospective/expert weights are not implemented yet. Source: `DeviationAssessmentService.kt`.
 - `CodeNotFormatted.html` should be reviewed for project-specific inspection guidance before release. Source: `inspectionDescriptions/CodeNotFormatted.html`.
 
 ## 11. Agent Handoff Template
